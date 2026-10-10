@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>life Issues</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Issues">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121715" media="(prefers-color-scheme: dark)">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/purify.min.js"></script>
+<style>
+/* Layout: one thumb-reach column; sticky header with Open/Closed switch, rows with a round toggle on the right, detail and settings slide over the list */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --fg:#1b2420; --muted:#5f6d67; --line:#dbe2df;
+  --accent:#1f6f5c; --accent-soft:#e1efea;
+  --open:#1a7f37; --closed:#8250df;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121715; --surface:#1a211e; --fg:#e6ece9; --muted:#97a59f; --line:#2b3531;
+  --accent:#5cc4a7; --accent-soft:#1d332c;
+  --open:#3fb950; --closed:#a371f7; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.6;-webkit-tap-highlight-color:transparent;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,a:focus-visible,.row:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:0 32px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;display:grid;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top .tools{display:flex}
+h1{margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.01em}
+h1 small{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);font-weight:500;margin-left:6px}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:active{background:var(--accent-soft)}
+.icon-btn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{padding:8px 0;border-radius:9px;font-weight:500;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg)}
+.count{font-family:var(--f-mono);font-size:.8rem}
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:.85rem}
+.banner button{color:var(--accent);font-weight:700;white-space:nowrap}
+.list{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:12px 8px 12px 16px;border-top:1px solid var(--line);cursor:pointer}
+.row:first-child{border-top:0}
+.row:active{background:var(--accent-soft)}
+.row .main{min-width:0;display:grid;gap:4px}
+.row .title{font-weight:500;line-height:1.45;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:.8rem}
+.num{font-family:var(--f-mono)}
+.label{border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:.75rem;line-height:1.6}
+.toggle{width:48px;height:48px;border-radius:50%;display:grid;place-items:center}
+.toggle .ring{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.toggle.is-closed .ring{background:var(--closed);border-color:var(--closed);color:#fff}
+.toggle .ring svg{opacity:0}
+.toggle.is-closed .ring svg{opacity:1}
+.toggle:active .ring{transform:scale(.92)}
+.toggle[disabled]{opacity:.45}
+.empty,.notice{padding:28px 16px;text-align:center;color:var(--muted)}
+.notice{background:var(--surface);border:1px solid var(--line);border-radius:14px;display:grid;gap:10px;justify-items:center}
+.notice strong{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:12px;font-weight:700;text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--surface)}
+.btn.close{background:var(--closed);color:#fff}
+.btn.reopen{background:var(--open);color:#fff}
+.btn.ghost{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.btn[disabled]{opacity:.5}
+.stale{font-size:.75rem;color:var(--muted);text-align:right}
+/* overlays */
+.sheet{position:fixed;inset:0;z-index:10;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.dhead{position:sticky;top:0;background:var(--bg);display:flex;align-items:center;gap:4px;padding-block:8px;z-index:2}
+.dhead .spacer{flex:1}
+.dhead a{color:var(--muted);font-size:.85rem;padding:8px}
+.dhead h2{margin:0;font-size:1.05rem}
+.dtitle{margin:4px 0 8px;font-size:1.3rem;line-height:1.4;font-weight:700;text-wrap:balance;overflow-wrap:anywhere}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:700;color:#fff}
+.chip.open{background:var(--open)} .chip.closed{background:var(--closed)}
+.actions{display:grid;margin-block:16px}
+.md{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 16px;overflow-wrap:anywhere;min-width:0}
+.md h1,.md h2,.md h3{font-size:1.02rem;margin:18px 0 6px;font-weight:700}
+.md p{margin:8px 0}
+.md ul,.md ol{padding-left:1.3em;margin:8px 0}
+.md li:has(> input[type="checkbox"]){list-style:none;margin-left:-1.3em}
+.md input[type="checkbox"]{accent-color:var(--accent);margin-right:6px;transform:translateY(1px)}
+.md a{color:var(--accent)}
+.md code{font-family:var(--f-mono);font-size:.85em;background:var(--accent-soft);padding:1px 4px;border-radius:4px}
+.md pre{overflow-x:auto;background:var(--accent-soft);padding:10px;border-radius:8px}
+.md pre code{background:none;padding:0}
+.md .tbl{overflow-x:auto}
+.md table{border-collapse:collapse;font-size:.85rem;margin:8px 0}
+.md th,.md td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.md blockquote{margin:8px 0;padding-left:12px;border-left:3px solid var(--line);color:var(--muted)}
+h2.sec{font-size:.8rem;letter-spacing:.08em;color:var(--muted);margin:24px 0 8px;font-weight:700}
+.comments{display:grid;gap:10px}
+.form{display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.form label{font-weight:700;font-size:.9rem}
+.form input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:var(--f-mono);font-size:.85rem}
+.form .row-btns{display:flex;gap:8px;flex-wrap:wrap}
+.help{color:var(--muted);font-size:.85rem}
+.help ol{padding-left:1.3em;margin:6px 0}
+.help code{font-family:var(--f-mono);font-size:.85em;background:var(--accent-soft);padding:1px 4px;border-radius:4px}
+.help a{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.9rem;z-index:20;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div class="top">
+      <h1>Issues<small>chiki-chiki/life</small></h1>
+      <div class="tools">
+        <button class="icon-btn" id="refresh" aria-label="再読み込み">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+        </button>
+        <button class="icon-btn" id="open-settings" aria-label="トークン設定">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M17 6l3 3"/><path d="M15 8l2 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="banner" id="no-token" hidden>
+      <span>閲覧のみのモードです。クローズ/再オープンにはトークンが必要です。</span>
+      <button id="banner-set">設定する</button>
+    </div>
+    <div class="seg" role="group" aria-label="表示切替">
+      <button id="tab-open" aria-pressed="true">Open <span class="count" id="c-open">–</span></button>
+      <button id="tab-closed" aria-pressed="false">Closed <span class="count" id="c-closed">–</span></button>
+    </div>
+  </header>
+  <main id="list-area"><div class="empty">Issueを読み込んでいます…</div></main>
+  <p class="stale" id="stale"></p>
+</div>
+
+<section id="detail" class="sheet" hidden aria-label="Issue詳細">
+  <div class="wrap">
+    <div class="dhead">
+      <button class="icon-btn" id="back" aria-label="一覧に戻る">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="spacer"></span>
+      <a id="gh-link" href="#" target="_blank" rel="noopener">GitHubで開く ↗</a>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</section>
+
+<section id="settings" class="sheet" hidden aria-label="トークン設定">
+  <div class="wrap">
+    <div class="dhead">
+      <button class="icon-btn" id="settings-back" aria-label="一覧に戻る">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2>トークン設定</h2>
+    </div>
+    <form class="form" id="token-form" autocomplete="off">
+      <label for="token-input">GitHub トークン</label>
+      <input id="token-input" type="password" placeholder="github_pat_…" spellcheck="false" autocapitalize="off">
+      <div class="row-btns">
+        <button class="btn primary" type="submit" id="token-save">保存して確認</button>
+        <button class="btn ghost" type="button" id="token-clear">削除</button>
+      </div>
+      <p class="help" id="token-status"></p>
+    </form>
+    <div class="help" style="margin-top:16px">
+      <strong>トークンの作り方</strong>
+      <ol>
+        <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token の作成ページ</a>を開く</li>
+        <li>Repository access で <code>Only select repositories</code> → <code>chiki-chiki/life</code> を選ぶ</li>
+        <li>Permissions の Repository permissions で <code>Issues</code> を <code>Read and write</code> にする</li>
+        <li>Generate token で作成し、表示されたトークンを上に貼り付ける</li>
+      </ol>
+      <p>トークンはこの端末のブラウザの中にだけ保存され、GitHub API との通信にだけ使います。</p>
+    </div>
+  </div>
+</section>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const OWNER = "chiki-chiki", REPO = "life";
+const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const state = { tab: "open", issues: { open: null, closed: null }, current: null, busy: new Set() };
+const $ = (id) => document.getElementById(id);
+
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v){ try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
+};
+let token = store.get("gh_token") || "";
+{ const t = store.get("tab"); if (t === "open" || t === "closed") state.tab = t; }
+
+const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function relTime(iso){
+  if (!iso) return "";
+  const d = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (d < 60) return "たった今";
+  if (d < 3600) return Math.floor(d/60) + "分前";
+  if (d < 86400) return Math.floor(d/3600) + "時間前";
+  if (d < 86400*30) return Math.floor(d/86400) + "日前";
+  return new Date(iso).toLocaleDateString("ja-JP");
+}
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2800);
+}
+
+class ApiError extends Error {
+  constructor(status, message, rateLimited){ super(message); this.status = status; this.rateLimited = rateLimited; }
+}
+async function gh(path, opts = {}){
+  const headers = { "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  const tk = opts.token !== undefined ? opts.token : token;
+  if (tk) headers["Authorization"] = "Bearer " + tk;
+  let res;
+  try {
+    res = await fetch(path.startsWith("http") ? path : API + path, { method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: "no-store" });
+  } catch (e) {
+    throw new ApiError(0, "network");
+  }
+  if (!res.ok) {
+    let msg = ""; try { msg = (await res.json()).message || ""; } catch (e) {}
+    throw new ApiError(res.status, msg, res.headers.get("x-ratelimit-remaining") === "0");
+  }
+  return { data: res.status === 204 ? null : await res.json(), link: res.headers.get("link") || "" };
+}
+
+function errorCopy(err, writing){
+  if (!(err instanceof ApiError)) return ["エラーが発生しました", String(err && err.message || "")];
+  if (err.status === 0) return ["GitHubに接続できませんでした", "通信状態を確認して、もう一度試してください。"];
+  if (err.rateLimited) return ["GitHub API の回数制限に達しました", token ? "しばらく待ってから再読み込みしてください。" : "トークンを設定すると制限が大きく緩和されます。"];
+  if (err.status === 401) return ["トークンが無効です", "期限切れか、貼り付けミスの可能性があります。トークン設定から登録し直してください。"];
+  if (writing && (err.status === 403 || err.status === 404)) return ["トークンの権限が足りません", "chiki-chiki/life の Issues を Read and write にしたトークンを設定してください。"];
+  if (err.status === 404) return ["見つかりませんでした", "Issueが削除されたか、リポジトリにアクセスできません。"];
+  return ["GitHubがエラーを返しました", `${err.status} ${err.message}`];
+}
+
+async function fetchList(which){
+  let url = `${API}/issues?state=${which}&per_page=100&sort=updated&direction=desc`;
+  const out = [];
+  for (let page = 0; url && page < 5; page++) {
+    const { data, link } = await gh(url);
+    out.push(...data.filter(i => !i.pull_request));
+    const m = link.match(/<([^>]+)>;\s*rel="next"/);
+    url = m ? m[1] : null;
+  }
+  return out;
+}
+
+let loading = false, lastLoaded = 0;
+async function load(){
+  if (loading) return;
+  loading = true; $("refresh").classList.add("spin");
+  const results = await Promise.allSettled([fetchList("open"), fetchList("closed")]);
+  loading = false; $("refresh").classList.remove("spin");
+  const [o, c] = results;
+  if (o.status === "fulfilled") state.issues.open = o.value;
+  if (c.status === "fulfilled") state.issues.closed = c.value;
+  const failed = results.find(r => r.status === "rejected");
+  if (failed && !state.issues[state.tab]) {
+    const [h, b] = errorCopy(failed.reason);
+    $("list-area").innerHTML = `<div class="notice"><strong>${esc(h)}</strong><span>${esc(b)}</span>
+      <button class="btn primary" id="retry">再読み込み</button></div>`;
+    $("retry").onclick = load;
+    return;
+  }
+  if (failed) toast(errorCopy(failed.reason)[0]);
+  else lastLoaded = Date.now();
+  render();
+}
+
+function render(){
+  $("no-token").hidden = !!token;
+  for (const k of ["open","closed"]) {
+    $("tab-" + k).setAttribute("aria-pressed", String(state.tab === k));
+    $("c-" + k).textContent = state.issues[k] ? state.issues[k].length : "–";
+  }
+  $("stale").textContent = lastLoaded ? "最終更新 " + new Date(lastLoaded).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "";
+  const items = state.issues[state.tab];
+  const area = $("list-area");
+  if (!items) { area.innerHTML = '<div class="empty">Issueを読み込んでいます…</div>'; return; }
+  if (!items.length) {
+    area.innerHTML = `<div class="empty">${state.tab === "open" ? "Open の Issue はありません" : "Closed の Issue はありません"}</div>`;
+    return;
+  }
+  area.innerHTML = '<div class="list">' + items.map(rowHtml).join("") + "</div>";
+}
+
+function labelsHtml(labels){
+  return (labels || []).map(l => typeof l === "string" ? l : l && l.name).filter(Boolean).map(l => `<span class="label">${esc(l)}</span>`).join("");
+}
+
+function rowHtml(it){
+  const closed = it.state === "closed";
+  const comments = it.comments ? `<span>コメント ${it.comments}</span>` : "";
+  const busy = state.busy.has(it.number);
+  return `<div class="row" role="button" tabindex="0" data-n="${it.number}">
+    <div class="main">
+      <div class="title">${esc(it.title)}</div>
+      <div class="meta"><span class="num">#${it.number}</span><span>${esc(relTime(it.updated_at))}</span>${comments}${labelsHtml(it.labels)}</div>
+    </div>
+    <button class="toggle ${closed ? "is-closed" : ""}" data-toggle="${it.number}" ${busy ? "disabled" : ""}
+      aria-label="${closed ? "#" + it.number + " を再オープン" : "#" + it.number + " をクローズ"}"><span class="ring">${CHECK}</span></button>
+  </div>`;
+}
+
+function findIssue(n){
+  return (state.issues.open || []).find(i => i.number === n) || (state.issues.closed || []).find(i => i.number === n);
+}
+
+async function setState(n, toClosed){
+  if (state.busy.has(n)) return;
+  if (!token) { toast("クローズ/再オープンにはトークンの設定が必要です"); openSettings(); return; }
+  state.busy.add(n); render(); renderDetailActions();
+  try {
+    const body = toClosed ? { state: "closed", state_reason: "completed" } : { state: "open" };
+    const { data } = await gh(`/issues/${n}`, { method: "PATCH", body });
+    for (const k of ["open","closed"]) state.issues[k] = (state.issues[k] || []).filter(i => i.number !== n);
+    (state.issues[data.state] = state.issues[data.state] || []).unshift(data);
+    if (state.current && state.current.number === n) Object.assign(state.current, data);
+    toast(toClosed ? `#${n} をクローズしました` : `#${n} を再オープンしました`);
+  } catch (err) {
+    const [h, b] = errorCopy(err, true);
+    toast(h + "：" + b);
+  } finally {
+    state.busy.delete(n); render(); renderDetail();
+  }
+}
+
+async function openDetail(n){
+  const base = findIssue(n) || { number: n };
+  state.current = { ...base, body: base.body ?? null, comments_list: null, error: null };
+  $("detail").hidden = false; $("detail").scrollTop = 0;
+  $("gh-link").href = `https://github.com/${OWNER}/${REPO}/issues/${n}`;
+  renderDetail();
+  try {
+    const { data } = await gh(`/issues/${n}`);
+    if (!state.current || state.current.number !== n) return;
+    Object.assign(state.current, data);
+    if (!data.comments) state.current.comments_list = [];
+    renderDetail();
+    if (data.comments) {
+      const res = await gh(`/issues/${n}/comments?per_page=100`);
+      if (!state.current || state.current.number !== n) return;
+      state.current.comments_list = res.data;
+      renderDetail();
+    }
+  } catch (err) {
+    if (!state.current || state.current.number !== n) return;
+    if (state.current.body === null) state.current.error = errorCopy(err);
+    else toast(errorCopy(err)[0]);
+    renderDetail();
+  }
+}
+
+function md(src){
+  if (!src) return '<p style="color:var(--muted)">本文はありません</p>';
+  if (!window.marked || !window.DOMPurify) return '<p style="white-space:pre-wrap">' + esc(src) + "</p>";
+  const html = DOMPurify.sanitize(marked.parse(src, { gfm: true, breaks: true }));
+  return html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, "</table></div>");
+}
+
+function renderDetailActions(){
+  const c = state.current, box = document.querySelector("#detail .actions");
+  if (!c || !box) return;
+  const closed = c.state === "closed", busy = state.busy.has(c.number);
+  box.innerHTML = `<button class="btn ${closed ? "reopen" : "close"}" id="d-toggle" ${busy || !c.state ? "disabled" : ""}>
+    ${busy ? "更新中…" : closed ? "再オープンする" : CHECK + " クローズする"}</button>`;
+  $("d-toggle").onclick = () => setState(c.number, !closed);
+}
+
+function renderDetail(){
+  const c = state.current; if (!c || $("detail").hidden) return;
+  const closed = c.state === "closed";
+  const chip = c.state ? `<span class="chip ${closed ? "closed" : "open"}">${closed ? "Closed" : "Open"}</span>` : "";
+  let body;
+  if (c.error) body = `<div class="notice"><strong>${esc(c.error[0])}</strong><span>${esc(c.error[1])}</span>
+    <button class="btn primary" id="d-retry">もう一度読み込む</button></div>`;
+  else if (c.body === null) body = '<div class="empty">本文を読み込んでいます…</div>';
+  else body = `<div class="md">${md(c.body)}</div>`;
+  let comments = "";
+  if (Array.isArray(c.comments_list) && c.comments_list.length) {
+    comments = `<h2 class="sec">コメント ${c.comments_list.length}</h2><div class="comments">` +
+      c.comments_list.map(cm => `<div><div class="meta" style="margin-bottom:4px"><strong>${esc(cm.user && cm.user.login)}</strong><span>${esc(relTime(cm.created_at))}</span></div>
+        <div class="md">${md(cm.body)}</div></div>`).join("") + "</div>";
+  }
+  $("detail-body").innerHTML = `
+    <div class="meta">${chip}<span class="num">#${c.number}</span><span>${esc(relTime(c.updated_at))}</span></div>
+    <h2 class="dtitle">${esc(c.title || "")}</h2>
+    <div class="meta">${labelsHtml(c.labels)}</div>
+    <div class="actions"></div>
+    ${body}${comments}`;
+  renderDetailActions();
+  const r = $("d-retry"); if (r) r.onclick = () => openDetail(c.number);
+  $("detail-body").querySelectorAll(".md a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
+}
+
+function closeDetail(){ $("detail").hidden = true; state.current = null; }
+
+function openSettings(){
+  $("settings").hidden = false;
+  $("token-input").value = "";
+  $("token-status").textContent = token ? "トークンは設定済みです。入れ替える場合は新しいトークンを貼り付けてください。" : "トークンは未設定です。";
+}
+$("token-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const v = $("token-input").value.trim();
+  if (!v) { $("token-status").textContent = "トークンを貼り付けてください。"; return; }
+  $("token-save").disabled = true; $("token-status").textContent = "確認しています…";
+  try {
+    const { data } = await gh("", { token: v });
+    if (data.permissions && data.permissions.push === false && data.permissions.triage === false) throw new ApiError(403, "");
+    token = v; store.set("gh_token", v);
+    $("token-input").value = "";
+    $("token-status").textContent = "保存しました。";
+    toast("トークンを保存しました");
+    $("settings").hidden = true; render(); load();
+  } catch (err) {
+    $("token-status").textContent = errorCopy(err, true).join("：");
+  } finally {
+    $("token-save").disabled = false;
+  }
+});
+$("token-clear").onclick = () => {
+  token = ""; store.set("gh_token", null);
+  $("token-status").textContent = "トークンを削除しました。";
+  render();
+};
+
+$("tab-open").onclick = () => { state.tab = "open"; store.set("tab","open"); render(); };
+$("tab-closed").onclick = () => { state.tab = "closed"; store.set("tab","closed"); render(); };
+$("refresh").onclick = load;
+$("open-settings").onclick = openSettings;
+$("banner-set").onclick = openSettings;
+$("settings-back").onclick = () => { $("settings").hidden = true; };
+$("back").onclick = closeDetail;
+$("list-area").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-toggle]");
+  if (t) { e.stopPropagation(); const n = +t.dataset.toggle; const it = findIssue(n); if (it) setState(n, it.state !== "closed"); return; }
+  const row = e.target.closest(".row"); if (row) openDetail(+row.dataset.n);
+});
+$("list-area").addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("row")) { e.preventDefault(); openDetail(+e.target.dataset.n); }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("settings").hidden) $("settings").hidden = true; else if (!$("detail").hidden) closeDetail();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Date.now() - lastLoaded > 60000) load();
+});
+
+render();
+load();
+</script>
+</body>
+</html>
